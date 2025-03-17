@@ -48,21 +48,34 @@ def animal_classification(image_path):
     class_name = class_names[index]
     confidence_score = prediction[0][index]
     return class_name[2:-1]
-animal = animal_classification("depositphotos_13927400-stock-photo-chicken-isolated-on-white.jpg")
-print(animal)
-bot = telebot.TeleBot('7783498381:AAE4y8ZEEmi4qIlvPKd_Pk9ob1Br9aeMxGI')
+bot = TeleBot('TOKEN')
 
 @bot.message_handler(commands=['animal'])
 def send_meme(message):
-    img_name =  random.choice(os.listdir('images'))
-    with open(f'images/{img_name}', 'rb') as f:
-        bot.send_photo(message.chat.id, f)
+    img_name = random.choice(os.listdir('images'))
+    img_path = f'images/{img_name}'
+    
+    # Открываем изображение и определяем эмоции
+    image = Image.open(img_path)
+    emotion_detector = FER()
+    emotions = emotion_detector.detect_emotions(image)
+    
+    # Проверяем наиболее выраженную эмоцию
+    if emotions:
+        dominant_emotion = max(emotions[0]['emotions'], key=emotions[0]['emotions'].get)
+    else:
+        dominant_emotion = "неизвестная эмоция"
 
+    # Отправляем изображение с информацией о настроении
+    with open(img_path, 'rb') as f:
+        bot.send_photo(message.chat.id, f, caption=f"На этом изображении человек {dominant_emotion}.")
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
-    bot.send_message(message.chat.id, "Привет! Используй команду /ecology, чтобы получить интересный факт про экологию!")
+    bot.send_message(message.chat.id, "Привет! Используй команду /animal, чтобы получить изображение с определением эмоции!")
 
+# Прочие команды и обработка
+# ...
 
-
-bot.polling()
+if __name__ == "__main__":
+    bot.polling(none_stop=True)
